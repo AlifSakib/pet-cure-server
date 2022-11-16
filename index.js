@@ -27,7 +27,7 @@ const client = new MongoClient(uri, {
 async function dbConnect() {
   try {
     await client.connect();
-    console.log(" Database Connection Success.... ".bgGreen);
+    console.log("Database Connection Success.... ".bgYellow);
   } catch (error) {
     console.log(error.name.bgRed, error.message.bgRed);
   }
@@ -35,6 +35,24 @@ async function dbConnect() {
 
 dbConnect();
 
+const AppointmentOptions = client
+  .db("PetCure")
+  .collection("AppointmentsOptions");
+
+const Booking = client.db("PetCure").collection("bookings");
+
+app.get("/appointmentOptions", async (req, res) => {
+  const options = await AppointmentOptions.find().toArray();
+  res.send(options);
+});
+
+app.post("/bookings", async (req, res) => {
+  const booking = req.body;
+  console.log(booking);
+  const result = await Booking.insertOne(booking);
+  res.send(result);
+});
+
 app.listen(port, () => {
-  console.log(` Server is running on ${port}... `.bgMagenta);
+  console.log(`Server is running on ${port}... `.bgCyan);
 });
