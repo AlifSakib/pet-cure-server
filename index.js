@@ -41,14 +41,29 @@ const AppointmentOptions = client
 
 const Booking = client.db("PetCure").collection("bookings");
 
+// Use Aggregate to query multiple collection and then merge data
 app.get("/appointmentOptions", async (req, res) => {
+  const date = req.query.date;
   const options = await AppointmentOptions.find().toArray();
+  const bookingQuery = { appointmentDate: date };
+  const alreadyBooked = await Booking.find(bookingQuery).toArray();
+  //code carefully :D
+  options.forEach((option) => {
+    const optionBooked = alreadyBooked.filter(
+      (book) => book.treatment === option.name
+    );
+    const bookedSlots = optionBooked.map((book) => book.slot);
+    const reaminingSlots = option.slots.filter(
+      (slot) => !bookedSlots.includes(slot)
+    );
+    option.slots = reaminingSlots;
+    // console.log(date, option.name, bookedSlots, reaminingSlots.length);
+  });
   res.send(options);
 });
 
 app.post("/bookings", async (req, res) => {
   const booking = req.body;
-  console.log(booking);
   const result = await Booking.insertOne(booking);
   res.send(result);
 });
