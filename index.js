@@ -1,6 +1,7 @@
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 require("colors");
@@ -125,7 +126,17 @@ app.post("/bookings", async (req, res) => {
   res.send(result);
 });
 
-app.get("/bookings", async (req, res) => {
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  console.log(authHeader);
+  if (!authHeader) {
+    return res.status(401).send("Unauthorized");
+  }
+  const token = authHeader.split(" ")[1];
+  console.log(token);
+}
+
+app.get("/bookings", verifyJWT, async (req, res) => {
   const email = req.query.email;
   console.log(email);
   const query = { email: email };
@@ -137,6 +148,17 @@ app.post("/users", async (req, res) => {
   const user = req.body;
   const result = await Users.insertOne(user);
   res.send(result);
+});
+
+app.get("/jwt", async (req, res) => {
+  const email = req.query.email;
+  const query = { email: email };
+  const user = await Users.findOne(query);
+  if (user) {
+    const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
+    return res.send({ accessToken: token });
+  }
+  res.status(403).send({ accessToken: "" });
 });
 
 app.listen(port, () => {
