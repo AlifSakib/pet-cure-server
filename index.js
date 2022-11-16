@@ -40,6 +40,7 @@ const AppointmentOptions = client
   .collection("AppointmentsOptions");
 
 const Booking = client.db("PetCure").collection("bookings");
+const Users = client.db("PetCure").collection("users");
 
 // Use Aggregate to query multiple collection and then merge data
 app.get("/appointmentOptions", async (req, res) => {
@@ -109,7 +110,32 @@ app.get("/v2/appointmentOptions", async (req, res) => {
 
 app.post("/bookings", async (req, res) => {
   const booking = req.body;
+  const query = {
+    appointmentDate: booking.appointmentDate,
+    email: booking.email,
+    treatment: booking.treatment,
+  };
+
+  const alreadyBooked = await Booking.find(query).toArray();
+  if (alreadyBooked.length) {
+    const message = `You already have a booking on ${booking.appointmentDate}`;
+    return res.send({ acknowledged: false, message });
+  }
   const result = await Booking.insertOne(booking);
+  res.send(result);
+});
+
+app.get("/bookings", async (req, res) => {
+  const email = req.query.email;
+  console.log(email);
+  const query = { email: email };
+  const bookings = await Booking.find(query).toArray();
+  res.send(bookings);
+});
+
+app.post("/users", async (req, res) => {
+  const user = req.body;
+  const result = await Users.insertOne(user);
   res.send(result);
 });
 
