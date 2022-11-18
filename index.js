@@ -204,6 +204,14 @@ app.get("/users/admin/:email", async (req, res) => {
   res.send({ isAdmin: user?.role === "admin" });
 });
 
+app.get("/appointmentSpecialty", async (req, res) => {
+  const query = {};
+  const result = await AppointmentOptions.find(query)
+    .project({ name: 1 })
+    .toArray();
+  res.send(result);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on ${port}... `.bgCyan);
 });
