@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -128,16 +128,26 @@ app.post("/bookings", async (req, res) => {
 
 function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
-  console.log(authHeader);
   if (!authHeader) {
     return res.status(401).send("Unauthorized");
   }
   const token = authHeader.split(" ")[1];
-  console.log(token);
+  jwt.verify(token, process.env.ACCESS_TOKEN, (err, decoded) => {
+    if (err) {
+      return res.status(401).send("Forbidded");
+    }
+    req.decoded = decoded;
+    next();
+  });
 }
 
 app.get("/bookings", verifyJWT, async (req, res) => {
   const email = req.query.email;
+  const decodedEmail = req.decoded.email;
+  if (decodedEmail !== email) {
+    return res.status(403).send("Forbidden");
+  }
+
   console.log(email);
   const query = { email: email };
   const bookings = await Booking.find(query).toArray();
@@ -150,6 +160,12 @@ app.post("/users", async (req, res) => {
   res.send(result);
 });
 
+app.get("/users", async (req, res) => {
+  const query = {};
+  const users = await Users.find(query).toArray();
+  res.send(users);
+});
+
 app.get("/jwt", async (req, res) => {
   const email = req.query.email;
   const query = { email: email };
@@ -159,6 +175,33 @@ app.get("/jwt", async (req, res) => {
     return res.send({ accessToken: token });
   }
   res.status(403).send({ accessToken: "" });
+});
+
+app.put("/users/admin/:id", verifyJWT, async (req, res) => {
+  const decodedEmail = req.decoded.email;
+  const query = { email: decodedEmail };
+  const user = await Users.findOne(query);
+  if (user?.role !== "admin") {
+    return res.status(403).send({ message: "forbidden access" });
+  }
+  const id = req.params.id;
+  const filter = { _id: ObjectId(id) };
+  const options = { upsert: true };
+  const updatedDoc = {
+    $set: {
+      role: "admin",
+    },
+  };
+  const result = await Users.updateOne(filter, updatedDoc, options);
+  console.log(result);
+  res.send(result);
+});
+
+app.get("/users/admin/:email", async (req, res) => {
+  const email = req.params.email;
+  const query = { email };
+  const user = await Users.findOne(query);
+  res.send({ isAdmin: user?.role === "admin" });
 });
 
 app.listen(port, () => {
