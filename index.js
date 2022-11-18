@@ -212,6 +212,13 @@ app.get("/appointmentSpecialty", async (req, res) => {
   res.send(result);
 });
 
+const doctorsCollection = client.db("PetCure").collection("doctors");
+app.post("/adddoctor", async (req, res) => {
+  const doctor = req.body;
+  const result = await doctorsCollection.insertOne(doctor);
+  res.send(result);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on ${port}... `.bgCyan);
 });
